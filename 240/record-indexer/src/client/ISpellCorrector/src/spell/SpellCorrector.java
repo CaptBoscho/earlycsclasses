@@ -1,0 +1,112 @@
+package client.ISpellCorrector.src.spell;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.TreeSet;
+
+public class SpellCorrector implements ISpellCorrector{
+	
+	private Trie t;
+	
+	public SpellCorrector()
+	{
+		t = new Trie();
+	}
+
+	@Override
+	public void useDictionary(Set<String> dict) throws IOException {
+		// TODO Auto-generated method stub
+		
+		//System.out.println(dict.toString());
+		Iterator sc = dict.iterator();
+		
+		while (sc.hasNext())
+		{
+			String word = ((String) sc.next()).toLowerCase();
+			System.out.println(word + '\n');
+			t.add(word);
+			
+		}
+				
+		
+	}
+
+	@Override
+	public String[] suggestSimilarWord(String inputWord)
+			throws NoSimilarWordFoundException {
+		// TODO Auto-generated method stub
+		/*Node p = t.find(inputWord.toLowerCase());
+		
+		
+		if(p==null)
+		{
+			
+			String s = t.SimWord(inputWord);
+			//System.out.println("check1: " + s);
+			
+			if(s==null)
+			{
+				throw new ISpellCorrector.NoSimilarWordFoundException();
+			}
+			else
+			{
+				return s;
+			}
+		}
+		else
+		{
+			
+			return inputWord;
+			
+		}*/
+		
+		Possibilites p = t.getOne(inputWord.toLowerCase());
+		List<String> ones = p.getAnswers();
+		
+		List<String> twos = t.getTwo(p);
+		
+		Set<String> s1 = new TreeSet<String>();
+		Set<String> s2 = new TreeSet<String>();
+		
+		for(int i=0; i<ones.size(); i++)
+		{
+			s1.add(ones.get(i));
+		}
+		
+		for(int i=0; i<twos.size(); i++)
+		{
+			s2.add(twos.get(i));
+		}
+		
+		List<String> results = new ArrayList<String>();
+		
+		Iterator it1 = s1.iterator();
+		while(it1.hasNext())
+		{
+			results.add((String) it1.next());
+		}
+		
+		Iterator it2 = s2.iterator();
+		while(it2.hasNext())
+		{
+			results.add((String) it2.next());
+		}
+		
+		String[] better = new String[results.size()];
+		for(int i=0; i<results.size(); i++)
+		{
+			better[i] = results.get(i).toUpperCase();
+		}
+		
+		return better;
+	}
+
+	
+
+}

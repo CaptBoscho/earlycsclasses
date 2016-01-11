@@ -1,0 +1,16 @@
+package client;
+
+import javax.swing.JFrame;
+
+import server.communicator.ClientCommunicator;
+import shared.communication.ValidateUserInput;
+import shared.communication.getProjectsOutput;
+
+public class MainFrameParent extends JFrame{
+
+	public MainFrameParent(ClientCommunicator cc, ValidateUserInput p, getProjectsOutput plist)
+	{
+		new MainFrame(this, cc, p, plist, this);
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
+	}
+}

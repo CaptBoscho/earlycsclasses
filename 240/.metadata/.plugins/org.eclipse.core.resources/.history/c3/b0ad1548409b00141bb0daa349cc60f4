@@ -1,0 +1,36 @@
+package spell;
+//import InsertionResult;
+//import Node;
+
+public class Trie {
+
+	private Node root;
+	
+	public Trie()
+	{
+		root = new Node();
+	}
+	
+	public void Upload(String s)
+	{
+		InsertionResult counters = new InsertionResult();
+		int level = 0;
+		counters.addNode();
+		counters = root.addWord(s, level, counters);
+		root.setRootInfo(counters);
+	}
+	
+	public int WordCount()
+	{
+		return root.getRootWordCount();
+	}
+	
+	public int NodeCount()
+	{
+		return root.getRootNodeCount();
+	}
+	
+	
+	
+
+}

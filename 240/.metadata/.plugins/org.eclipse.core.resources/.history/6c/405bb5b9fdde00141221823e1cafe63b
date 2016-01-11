@@ -1,0 +1,177 @@
+package client;
+
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JDialog;
+import javax.swing.JButton;
+import javax.swing.JTextField;
+
+import server.communicator.ClientCommunicator;
+import server.communicator.ClientException;
+import shared.communication.ValidateUserInput;
+import shared.communication.ValidateUserOutput;
+import shared.communication.getProjectsOutput;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+public class LoginFrame extends JDialog {
+
+	JPanel p = new JPanel();
+	JButton b = new JButton("login");
+	JButton e = new JButton("exit");
+	JLabel usname = new JLabel("Username:");
+	JTextField usnamereceive = new JTextField(20);
+	JLabel pword = new JLabel("Password:");
+	JTextField pwordreceive = new JTextField(20);
+	JOptionPane op = new JOptionPane();
+	static LoginParentFrame fame = null;
+	LoginFrame login;
+	
+	
+	public LoginFrame()
+	{
+		super(fame, "Login", true);
+	}
+	
+	public LoginFrame(LoginParentFrame f)
+	{
+		
+		fame = f;
+		login = new LoginFrame();
+		login.setSize(400,200);
+		login.setResizable(false);
+		login.setDefaultCloseOperation(EXIT_ON_CLOSE);
+		login.p.setLayout(new GridBagLayout());
+		login.setBounds(500, 500, 400, 150);
+		
+		
+		GridBagConstraints c = new GridBagConstraints();
+		
+		
+		c.fill = GridBagConstraints.WEST;
+		c.weightx = 0.25;
+		c.weighty = 0.25;
+		c.gridx = 1;
+		c.gridy = 0;
+		login.p.add(usname, c);
+		
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.weightx = 0.25;
+		c.weighty = 0.25;
+		c.gridx = 2;
+		c.gridy = 0;
+		login.p.add(usnamereceive, c);
+		
+		c.fill = GridBagConstraints.WEST;
+		c.weightx = 0.25;
+		c.weighty = 0.25;
+		c.gridx = 1;
+		c.gridy = 1;
+		login.p.add(pword, c);
+		
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.weightx = 0.25;
+		c.weighty = 0.25;
+		c.gridx = 2;
+		c.gridy = 1;
+		login.p.add(pwordreceive, c);
+		
+		c.fill = GridBagConstraints.CENTER;
+		c.weightx = 0.25;
+		c.weighty = 0.5;
+		c.gridwidth = 1;
+		c.gridx = 1;
+		c.gridy = 2;
+		
+	
+		
+		login.b.addActionListener(new ActionListener(){
+			
+				
+			
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					String hostnamevalue = fame.hostname;
+					int port = fame.port;
+					String portvalue = Integer.toString(port);
+					String username = usnamereceive.getText();
+					String password = pwordreceive.getText();
+					
+					ClientCommunicator cc = new ClientCommunicator(hostnamevalue, portvalue);
+					//System.out.println(username);
+					//System.out.println(password);
+					try {
+						ValidateUserOutput person = cc.ValidateUser(username, password);
+						getProjectsOutput plist = cc.getProjects(username, password);
+						ValidateUserInput p = new ValidateUserInput(username, password);
+						
+						
+						if(person.Works())
+						{
+							op.showMessageDialog(null, "Welcome " + person.getFirstname() + " " + person.getLastname() +"!\n"
+									+ "You have " + person.getRecordsIndexed() + " indexed records");
+							
+							
+							
+							JFrame s = new MainFrameParent(cc, p, plist, login);
+						}
+						else
+						{
+							System.out.println("doesn't work");
+							op.showMessageDialog(null, "I'm sorry, the username or password was incorrect.");
+							login.setVisible(true);
+						}
+						
+					} catch (ClientException e1) {
+						
+						op.showMessageDialog(null, "I'm sorry, the username or password was incorrect.");	
+						e1.printStackTrace();
+					}
+					
+					
+									
+					
+					e.getSource();
+					e.getActionCommand();
+					setVisible(false);
+					//login.setVisible(false);
+				}
+				}
+		
+				
+				
+				);
+		
+		login.p.add(login.b, c);
+		
+
+		c.fill = GridBagConstraints.CENTER;
+		c.weightx = 0.25;
+		c.weighty = 0.5;
+		c.gridx = 2;
+		c.gridy = 2;
+		
+		login.e.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				fame.setVisible(false);
+				fame.dispose();
+			}
+			
+		});
+		
+		login.p.add(login.e, c);
+		
+		login.add(p);
+		//login = this;
+		//login.setVisible(true);
+		login.setVisible(true);
+	}
+}

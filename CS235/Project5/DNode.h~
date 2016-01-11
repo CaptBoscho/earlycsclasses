@@ -1,0 +1,23 @@
+#pragma once
+
+#include <iostream>
+#include <sstream>
+#include <string>
+
+using namespace std;
+
+struct DNode
+{
+	string data;
+	
+	DNode* next;
+	
+	DNode* prev;
+	
+	
+	
+	DNode(const string& the_data,
+		DNode* prev_val = NULL, DNode* next_val = NULL) :
+		data(the_data), next(next_val), prev(prev_val) {}
+	
+};

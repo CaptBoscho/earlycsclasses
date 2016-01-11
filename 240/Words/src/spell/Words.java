@@ -1,0 +1,40 @@
+package spell;
+
+import java.io.*;
+import java.util.Scanner;
+
+public class Words {
+	private File file;
+	private Trie t;
+
+	public void main(String[] args) {
+		// TODO Auto-generated method stub
+		
+		file = new File(args[0]);
+		Scanner sc;
+		try {
+			sc = new Scanner(file);
+			
+			t = new Trie();
+			
+			while (sc.hasNext())
+			{
+				String word = sc.next().toLowerCase();
+				t.Upload(word);
+			}
+			
+			System.out.println(t.WordCount());
+			System.out.println(t.NodeCount());
+			
+			sc.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
+		
+	}
+
+}

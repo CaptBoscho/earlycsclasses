@@ -1,0 +1,51 @@
+clear
+insert 0 bob
+print
+insert 1 joe
+print
+insert 0 jim
+print
+insert 1 ned
+print
+insert 3 zed
+print
+clear
+insert 0 bob
+insert 1 joe
+insert 0 jim
+insert 1 ned
+insert 3 zed
+print
+remove 0
+print
+remove 3
+print
+remove 1
+print
+remove 1
+print
+remove 0
+print
+clear
+insert 0 bob
+insert 1 joe
+insert 0 bob
+insert 1 ned
+insert 3 zed
+print
+find zed
+find bob
+find joe
+find ned
+find sue
+remove 0
+print
+find bob
+remove 1
+print
+find bob
+remove 1
+remove 1
+remove 0
+print
+find zed

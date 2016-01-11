@@ -1,0 +1,42 @@
+package client;
+
+import java.awt.BorderLayout;
+import java.io.IOException;
+
+import javax.swing.JEditorPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.text.html.HTMLEditorKit;
+
+public class FieldTab extends JPanel{
+	
+	BatchState bs;
+	JEditorPane jep;
+	
+	public FieldTab(BatchState batch)
+	{
+		setLayout(new BorderLayout());
+		bs = batch;
+		jep = new JEditorPane();
+	    jep.setEditable(false);  
+	    HTMLEditorKit kit = new HTMLEditorKit();
+	    jep.setEditorKit(kit);
+	    
+	}
+	
+	public void setPage(String url)
+	{
+		
+		try {
+			jep.setPage(url);			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		JScrollPane scrollPane = new JScrollPane(jep);
+		add(scrollPane, BorderLayout.CENTER);
+		
+	}
+
+}

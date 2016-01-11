@@ -1,0 +1,38 @@
+package listem;
+
+import java.io.File;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class Parent {
+	
+	public File[] Process(File directory, String FileSelectionPattern)
+	{
+		if(directory.isDirectory()==false)
+		{
+			if(directory.isFile()==false)
+			{
+				//error
+			}
+		}
+		else
+		{
+			File[] lister = directory.listFiles();
+			Pattern p = Pattern.compile(FileSelectionPattern);
+			for(int i=0; i<lister.length; i++)
+			{
+				Matcher m = p.matcher(lister[i].getName());
+				
+			}
+			
+			
+			
+			
+			
+		}
+		
+		
+		return null;
+	}
+
+}

@@ -1,0 +1,29 @@
+!SESSION 2015-04-13 08:38:45.991 -----------------------------------------------
+eclipse.buildId=4.3.2.3fc20
+java.version=1.7.0_75
+java.vendor=Oracle Corporation
+BootLoader constants: OS=linux, ARCH=x86_64, WS=gtk, NL=en_US
+Command-line arguments:  -os linux -ws gtk -arch x86_64
+
+This is a continuation of log file /users/home1/guest/c/cbyers6/240/.metadata/.bak_0.log
+Created Time: 2015-04-13 08:47:24.039
+
+!ENTRY org.eclipse.debug.ui 4 0 2015-04-13 08:47:24.044
+!MESSAGE Tab group extension: org.eclipse.cdt.launch.applicationProfileLaunchTabGroup for type org.eclipse.cdt.launch.applicationLaunchType for the [profile] mode has been replaced by extension: org.eclipse.cdt.launch.applicationProfileLaunchTabGroup
+!SESSION 2015-04-13 09:17:24.779 -----------------------------------------------
+eclipse.buildId=4.3.2.3fc20
+java.version=1.7.0_75
+java.vendor=Oracle Corporation
+BootLoader constants: OS=linux, ARCH=x86_64, WS=gtk, NL=en_US
+Command-line arguments:  -os linux -ws gtk -arch x86_64
+
+!ENTRY org.tigris.subversion.subclipse.core 4 0 2015-04-13 09:18:04.593
+!MESSAGE Could not auto-share project record-indexer2
+!STACK 1
+org.tigris.subversion.subclipse.core.SVNException: Provided SVN information does not match that on disk for project 'record-indexer2'.
+	at org.tigris.subversion.subclipse.core.resources.SVNWorkspaceRoot.setSharing(SVNWorkspaceRoot.java:206)
+	at org.tigris.subversion.subclipse.core.SVNTeamProviderType$AutoShareJob.autoconnectSVNProject(SVNTeamProviderType.java:140)
+	at org.tigris.subversion.subclipse.core.SVNTeamProviderType$AutoShareJob.run(SVNTeamProviderType.java:106)
+	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:53)
+!SUBENTRY 1 org.tigris.subversion.subclipse.core 4 4 2015-04-13 09:18:04.594
+!MESSAGE Provided SVN information does not match that on disk for project 'record-indexer2'.

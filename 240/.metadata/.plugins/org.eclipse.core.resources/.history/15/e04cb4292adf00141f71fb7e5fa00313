@@ -1,0 +1,353 @@
+package client;
+
+import java.awt.BorderLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+
+import shared.communication.DownloadBatchOutput;
+
+public class FormTab extends JPanel{
+	
+	BatchState bs;
+	JList list;
+	FormRight fr;
+	
+	public FormTab(BatchState batch)
+	{
+		bs = batch;
+		//setLayout(new GridBagLayout());
+		setLayout(new BorderLayout());
+	}
+	
+	public void initialize()
+	{
+		int amount = bs.recordsperimage;
+		String[] recs = new String[amount];
+		for(int i=0; i<amount; i++)
+		{
+			StringBuilder sb = new StringBuilder();
+			sb.append(Integer.toString(i+1) + "                    ");
+			recs[i] = sb.toString();
+		}
+		
+		list = new JList(recs);	
+		list.addListSelectionListener(new Listen());
+		
+		JScrollPane scroll1 = new JScrollPane(list);
+		scroll1.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		add(scroll1, BorderLayout.WEST);
+		
+		fr = new FormRight();
+		
+		Cell c = bs.getCell();
+		
+		//fr.update(c.record);
+		
+		JScrollPane scroll2 = new JScrollPane(fr);
+		scroll2.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		
+		add(scroll2, BorderLayout.CENTER);
+		
+	}
+	
+	/*public void update(int r)
+	{
+		remove(fr);
+		fr = new FormRight(r);
+		add(fr, BorderLayout.CENTER);
+		revalidate();
+		repaint();
+	}*/
+	
+	public class FormRight extends JPanel
+	{
+		GridBagLayout gb = new GridBagLayout();
+		JTextField[] texts;
+		
+		/*public FormRight()
+		{
+			setLayout(gb);
+			int rpi = bs.recordsperimage;
+			//System.out.println("rpi="+rpi + "fields:" + bs.fields.size());
+			texts = new JTextField[bs.fields.size()];
+			
+			int f = 1;
+			for(int i=0; i<(bs.fields.size()); i++)
+			{
+				
+				JLabel name = new JLabel(bs.fields.get(i).getTitle());
+				
+				for(int k=0; k<rpi; k++)
+				{
+					
+					String s = bs.values[k][f];
+					JTextField text;
+					if(s == null)
+					{
+						text = new JTextField(20);
+					}
+					else
+					{
+						text = new JTextField(s, 20);
+					}
+					
+					text.addActionListener(new TextListen(k, f, text));
+					text.addFocusListener(new Focuser(k, f, text));
+					//texts[k][f] = text;
+					
+				
+				}
+				
+				GridBagConstraints cc = new GridBagConstraints();
+				cc.anchor = GridBagConstraints.LINE_START;
+				cc.gridx = 1;
+				cc.gridy = i;
+				cc.weighty = .25;
+				add(name, cc);
+				
+				/*cc.gridx = 2;
+				cc.gridy = i;
+				cc.weighty = .25;
+				add(text, cc);
+				
+				f++;
+			}
+			
+			Cell c = bs.getCell();
+			int r = c.record;
+			for(int i=0; i<bs.fields.size(); i++)
+			{
+				//System.out.println("r="+r + "f:" + i);
+				GridBagConstraints cc = new GridBagConstraints();
+				cc.anchor = GridBagConstraints.LINE_START;
+				cc.gridx = 2;
+				cc.gridy = i;
+				cc.weighty = .25;
+				//add(texts[r][i+1], cc);
+			}
+			this.repaint();
+		}*/
+		
+		public FormRight()
+		{
+			setLayout(gb);
+			texts = new JTextField[bs.fields.size()];
+			
+			for(int i=0; i<(bs.fields.size()); i++)
+			{
+				
+				JLabel name = new JLabel(bs.fields.get(i).getTitle());
+				GridBagConstraints cc = new GridBagConstraints();
+				cc.anchor = GridBagConstraints.LINE_START;
+				cc.gridx = 1;
+				cc.gridy = i;
+				cc.weighty = .25;
+				add(name, cc);
+			}
+			
+			int f =1;
+			for(int i=0; i<bs.fields.size(); i++)
+			{
+				int r = bs.getSelectedCell().record;
+				String s = bs.values[r][f];
+				JTextField text = new JTextField(s, 20);
+				
+				text.addActionListener(new TextListen(r, f, text));
+				text.addFocusListener(new Focuser(r, f, text));
+				
+				texts[i] = text;
+				
+				GridBagConstraints cc = new GridBagConstraints();
+				cc.anchor = GridBagConstraints.LINE_START;
+				cc.gridx = 2;
+				cc.gridy = i;
+				cc.weighty = .25;
+				add(text, cc);
+				f++;
+			}
+			revalidate();
+			this.repaint();
+		}
+		
+		public void updateFR(int r)
+		{
+			Cell cell = bs.getSelectedCell();
+			int x = cell.field -1;
+			System.out.println(x);
+			for (int i=0; i<bs.fields.size(); i++)
+			{
+				//texts[i].addActionListener(new TextListen(r, i, texts[i]));
+				if(i == x)
+				{
+					//texts[i].requestFocus();
+				}
+				
+				texts[i].setText(bs.values[r][i+1]);
+			}
+			repaint();
+		}
+		
+		/*
+		public void update(int r)
+		{
+			//System.out.println("formtab, row#: " + r);
+			for(int i=0; i<(bs.fields.size()); i++)
+			{
+				
+				JLabel name = new JLabel(bs.fields.get(i).getTitle());
+				GridBagConstraints cc = new GridBagConstraints();
+				cc.anchor = GridBagConstraints.LINE_START;
+				cc.gridx = 1;
+				cc.gridy = i;
+				cc.weighty = .25;
+				add(name, cc);
+			}
+			
+			int f =1;
+			for(int i=0; i<bs.fields.size(); i++)
+			{
+				String s = bs.values[r][f];
+				JTextField text = new JTextField(s, 20);
+				
+				GridBagConstraints cc = new GridBagConstraints();
+				cc.anchor = GridBagConstraints.LINE_START;
+				cc.gridx = 2;
+				cc.gridy = i;
+				cc.weighty = .25;
+				add(text, cc);
+				f++;
+			}
+			
+			
+			revalidate();
+		}*/
+	}
+	
+	public class Listen implements ListSelectionListener
+	{
+
+		@Override
+		public void valueChanged(ListSelectionEvent e) {
+			// TODO Auto-generated method stub
+			
+			System.out.println(e.getLastIndex());
+			fr.updateFR(e.getLastIndex());
+			revalidate();
+			repaint();
+		}
+		
+		
+		
+	}
+	
+	public class TextListen implements ActionListener
+	{
+		int row;
+		int column;
+		JTextField text;
+		
+		TextListen(int r, int c, JTextField t)
+		{
+			row = r;
+			column = c;
+			text = t;
+			
+			
+		}
+		
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// TODO Auto-generated method stub
+			//System.out.println("action. row=" + row + " col=" + column);
+			//System.out.println(text.getText());
+			
+			bs.values[row][column] = text.getText();
+			repaint();
+		}
+		
+	}
+	
+	public class Focuser implements FocusListener
+	{
+		int row;
+		int column;
+		JTextField text;
+		
+		Focuser(int r, int c, JTextField t)
+		{
+			row = r;
+			column = c;
+			text = t;
+			
+			
+		}
+		
+		@Override
+		public void focusGained(FocusEvent e) {
+			// TODO Auto-generated method stub
+			//System.out.println("focuser. row=" + row + " col=" + column);
+			Cell c = new Cell(column, row);
+			bs.setSelectedCell(c);
+			bs.updateCell(row, column);
+		}
+
+		@Override
+		public void focusLost(FocusEvent e) {
+			// TODO Auto-generated method stub
+			//System.out.println(text.getText());
+			bs.values[row][column] = text.getText();
+			repaint();
+		}
+		
+	}
+	
+	
+	
+	
+	
+	
+
+	/*GridBagConstraints c = new GridBagConstraints();
+	c.anchor = GridBagConstraints.LINE_START;
+	c.fill = GridBagConstraints.WEST;
+	c.gridx = 0;
+	c.gridy = 0;
+	c.weighty = 1;
+	//c.weightx = .25;
+	c.gridheight = bs.fields.size();
+	add(list, c);
+	
+	//int line = 0;
+	for(int i=0; i<bs.fields.size(); i++)
+	{
+		JLabel name = new JLabel(bs.fields.get(i).getTitle());
+		JTextField text = new JTextField(20);
+		
+		GridBagConstraints cc = new GridBagConstraints();
+		cc.anchor = GridBagConstraints.LINE_START;
+		cc.gridx = 1;
+		cc.gridy = i;
+		cc.weighty = .25;
+		add(name, cc);
+		
+		cc.gridx = 2;
+		cc.gridy = i;
+		cc.weighty = .25;
+		add(text, cc);
+		
+	}*/
+
+}

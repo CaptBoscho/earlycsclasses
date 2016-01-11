@@ -1,0 +1,91 @@
+package client;
+
+import java.awt.BorderLayout;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.List;
+
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSlider;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+import shared.model.field;
+
+public class Image extends JPanel{
+	
+	private ImageComponent comp;
+	BatchState bs;
+	private JSlider slider;
+	
+	public Image(BatchState batch)
+	{
+		bs = batch;
+		setLayout(new BorderLayout());
+		slider = new JSlider(1, 100, 20);
+		slider.addChangeListener(sliderChangeListener);
+	}
+	
+	
+	
+	
+	
+	public void addPicture(String url, int rh, int firsty, List<field> fields)
+	{
+		int firstx = fields.get(0).getXcoord();
+		int xwidth = fields.get(0).getWidth();
+		
+		
+		comp = new ImageComponent(url, rh, firsty, firstx, xwidth);
+		add(comp, BorderLayout.CENTER);
+		//add(slider, BorderLayout.SOUTH);
+		revalidate();
+		
+	}
+	
+	public void updatePicture(String url, int rh, int firsty, List<field> fields, int column, int row)
+	{
+		//this.removeAll();
+		this.remove(comp);
+		int x = fields.get(column-1).getXcoord();
+		int xwidth = fields.get(column-1).getWidth();
+		
+		int y = firsty + (rh * row);
+		
+		comp = new ImageComponent(url, rh, y, x, xwidth);
+		System.out.println("scale: " + bs.getScale());
+		comp.setScale(bs.getScale());
+		add(comp);
+		revalidate();
+		
+	}
+	
+	public void Zoom(boolean way)
+	{
+		if(way)
+		{
+			comp.setScale(comp.getScale() * 1.25);
+		}
+		else
+		{
+			comp.setScale(comp.getScale() * 0.75);
+		}
+		
+		bs.setScale(comp.getScale());
+	}
+	
+	private ChangeListener sliderChangeListener = new ChangeListener() {
+		
+		@Override
+		public void stateChanged(ChangeEvent e) {
+			System.out.println(slider.getValue() + " value");
+			comp.setScale(slider.getValue() * 0.05);
+		}
+	};
+
+}

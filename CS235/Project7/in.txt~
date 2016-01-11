@@ -1,0 +1,9 @@
+add bob
+add joe
+add jim
+print
+find jimmy
+remove joe
+print
+clear
+add zoe

@@ -1,0 +1,482 @@
+package client;
+
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.awt.image.RescaleOp;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.imageio.ImageIO;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JSplitPane;
+import javax.swing.JTextField;
+
+import server.communicator.ClientCommunicator;
+import server.communicator.ClientException;
+import shared.communication.DownloadBatchOutput;
+import shared.communication.ValidateUserInput;
+import shared.communication.ValidateUserOutput;
+import shared.communication.getProjectsOutput;
+import shared.communication.getSampleImageOutput;
+import shared.model.project;
+
+public class MainFrame extends JDialog implements ActionListener{
+	
+	JMenuBar menubar;
+	JMenu menu;
+	JSplitPane split;
+	JComboBox box;
+	JDialog dialog;
+	JPanel togglepane;
+	
+	JOptionPane op = new JOptionPane();
+	getProjectsOutput plist;
+	ClientCommunicator cc;
+	ValidateUserInput person;
+	BatchState bs;
+	
+	JMenuItem download = new JMenuItem("Download Batch");
+	JMenuItem logout = new JMenuItem("Logout");
+	JMenuItem exit = new JMenuItem("Exit");
+	
+	JButton zi = new JButton("Zoom In");
+	JButton zo = new JButton("Zoom Out");
+	JButton inv = new JButton("Invert Image");
+	JButton tog = new JButton("Toggle Highlights");
+	JButton sav = new JButton("Save");
+	JButton sub = new JButton("Submit");
+	
+	JFrame f;
+	
+	LoginFrame dad;
+	
+	public MainFrame(JFrame frame, ClientCommunicator c, ValidateUserInput p, getProjectsOutput pl, LoginFrame parent)
+	{
+		
+		super(frame, "Indexer", true);
+		f = frame;
+		plist = pl;
+		person = p;
+		cc = c;
+		dad = parent;
+		dad.setVisible(false);
+		
+		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+		setResizable(true);
+		setLayout(new BorderLayout());
+		CreateMenu();
+		//image.addPicture("http://drbunsen.cs.byu.edu:4111/Records/images/1890_image0.png");
+		split = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+		
+		CreateToggle();
+		
+		try {
+			ValidateUserOutput man = cc.ValidateUser(person.getUsername(), person.getPassword());
+			if(man.getBID()>-1)
+			{
+				setButtons(true);
+				download.setEnabled(false);
+				bs = new BatchState(this, person.getUsername());
+				bs.load();
+				//Load up batch state
+			}
+			else
+			{
+				setButtons(false);
+				setSize(1400,1200);
+				Point point = new Point(100,0);
+				setLocation(point);
+				bs = new BatchState(this, person.getUsername());
+			}
+			
+			
+		} catch (ClientException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		add(togglepane, BorderLayout.NORTH);
+		add(split, BorderLayout.CENTER);
+		
+		setVisible(true);
+	}
+	
+	public void CreateMenu()
+	{
+		menubar = new JMenuBar();
+		menu = new JMenu("File");
+		
+		
+		logout.addActionListener(this);
+		download.addActionListener(this);
+		exit.addActionListener(this);
+		
+		menu.add(logout);
+		menu.add(download);
+		menu.add(exit);
+		
+		menubar.add(menu);
+		setJMenuBar(menubar);
+		
+	}
+	
+	public void CreateToggle()
+	{
+		togglepane = new JPanel();
+		BoxLayout b = new BoxLayout(togglepane, BoxLayout.X_AXIS);
+
+		togglepane.setLayout(b);
+		
+		zi.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				bs.image.Zoom(true);				
+			}
+			
+		});
+		
+		zo.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				bs.image.Zoom(false);				
+			}
+			
+		});
+		
+		inv.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				
+				if(bs.inverted == false)
+				{
+					bs.inverted = true;
+					RescaleOp op = new RescaleOp(-1.0f, 255f, null);
+					bs.InvertImage(op);
+				}
+				else
+				{
+					bs.inverted = false;
+					bs.UninvertImage();
+				}
+				
+			}
+			
+		});
+		
+		tog.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+		});
+		
+		sav.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				bs.write();				
+			}
+			
+		});
+		
+		sub.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				StringBuilder sb = new StringBuilder();
+				
+				for(int i=0; i<bs.recordsperimage; i++)
+				{
+					for(int k=1; k<bs.fields.size()+1; k++)
+					{
+						String temp = bs.values[i][k];
+						if(temp != null && !temp.isEmpty())
+						{
+							sb.append(temp);
+						}
+						sb.append(",");
+					}
+					sb.append(";");
+				}
+				
+				if(sb.length()>0)
+				{
+					while(sb.length()>0 && (sb.charAt(sb.length()-1) == ';' || sb.charAt(sb.length()-1) == ','))
+					{
+						sb.deleteCharAt(sb.length()-1);
+					}
+				}
+				
+				try {
+					cc.SubmitBatch(person.getUsername(), person.getPassword(), bs.BatchID, sb.toString());
+					
+					Point point = bs.point;
+					Dimension d = bs.windowsize;
+					String user = bs.username;
+					
+					//bs.main.removeAll();
+					//setButtons(false);
+					//bs.main.setSize(d);
+					//bs.main.setLocation(point);
+					bs.main.dispose();
+					bs.main = new MainFrame(f, cc, person, plist, dad);
+					bs = new BatchState(bs.main, user);
+					repaint();
+					
+				} catch (ClientException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+			
+		});
+		
+		togglepane.add(zi);
+		togglepane.add(zo);
+		togglepane.add(inv);
+		togglepane.add(tog);
+		togglepane.add(sav);
+		togglepane.add(sub);	
+	}
+	
+	public void setButtons(boolean choose)
+	{
+		if(choose)
+		{
+			zi.setEnabled(true);
+			zo.setEnabled(true);
+			inv.setEnabled(true);
+			tog.setEnabled(true);
+			sav.setEnabled(true);
+			sub.setEnabled(true);
+		}
+		else
+		{
+			zi.setEnabled(false);
+			zo.setEnabled(false);
+			inv.setEnabled(false);
+			tog.setEnabled(false);
+			sav.setEnabled(false);
+			sub.setEnabled(false);
+		}
+	}
+	
+	public JDialog CreateDialog(String[] projects)
+	{	
+		JPanel p = new JPanel();
+		
+		dialog.setResizable(false);
+		p.setLayout(new GridBagLayout());
+		JLabel pro = new JLabel("Project:");
+		box = new JComboBox(projects);
+		JButton view = new JButton("View Sample");
+		JButton can = new JButton("Cancel");
+		JButton down = new JButton("Download");
+		
+		can.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				dialog.setVisible(false);
+				dialog.dispose();
+				
+			}
+		});
+		
+		view.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String project = (String) box.getSelectedItem();
+				int proID = -1;
+				List<project> pros = plist.getProjects();
+				for(int i=0; i<pros.size(); i++)
+				{
+					if(project.equals(pros.get(i).getTitle()))
+					{
+						proID = pros.get(i).getPersonalID();
+					}
+				}
+				
+				try {
+					getSampleImageOutput out = cc.getSampleImage(person.getUsername(), person.getPassword(), proID);
+					String current = out.getURL();
+					System.out.println(current);
+					BufferedImage bi = ImageIO.read(new URL( current));
+					JOptionPane.showMessageDialog(null, null, current, JOptionPane.PLAIN_MESSAGE, new ImageIcon(bi));
+					
+					
+				} catch (ClientException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (MalformedURLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+			}
+			
+		});
+		
+		down.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String project = (String) box.getSelectedItem();
+				int proID = -1;
+				List<project> pros = plist.getProjects();
+				for(int i=0; i<pros.size(); i++)
+				{
+					if(project.equals(pros.get(i).getTitle()))
+					{
+						proID = pros.get(i).getPersonalID();
+					}
+				}
+				
+				try {
+					DownloadBatchOutput dbo = cc.DownloadBatch(person.getUsername(), person.getPassword(), proID);
+					bs.setDBO(dbo);
+					String u = dbo.getUrl();
+					bs.setURL(u);
+					project p = dbo.getProject();
+					int rh = p.getRecordheight();
+					int firsty = p.getFirstycoord();
+					Cell cell = bs.getCell();
+					bs.image.addPicture(u, rh, firsty, dbo.getFields(), cell.field, cell.record);
+					
+					download.setEnabled(false);
+					setButtons(true);
+					
+					bs.setTopComponent();
+					
+					
+					//split.setTopComponent(image);
+					bs.bp.tf.table.initialize(dbo.getNumofRecords(), dbo.getFields());
+					bs.bp.tf.form.initialize();
+					
+					bs.setBottomComponent();
+					//split.setBottomComponent(bp);
+					revalidate();
+					dialog.setVisible(false);
+					
+				} catch (ClientException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+			
+		});
+		
+		
+		GridBagConstraints c = new GridBagConstraints();
+		c.anchor = GridBagConstraints.LINE_START;
+		c.gridx = 0;
+		c.gridy = 0;
+		p.add(pro, c);
+		
+		c.gridx = 1;
+		c.gridy = 0;
+		p.add(box, c);
+		
+		c.gridx = 2;
+		c.gridy = 0;
+		p.add(view, c);
+		
+		c.gridx = 1;
+		c.gridy = 1;
+		p.add(can, c);
+		
+		c.gridx = 2;
+		c.gridy = 1;
+		p.add(down, c);
+		
+		dialog.add(p);
+		return dialog;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if(e.getSource() == download)
+		{
+			List<project> pros = plist.getProjects();
+			String[] projects = new String[pros.size()];
+			for(int i=0; i<pros.size(); i++)
+			{
+				String name = pros.get(i).getTitle();
+				projects[i] = name;
+			}
+			
+			dialog = new JDialog(this, "Download Batch", Dialog.ModalityType.APPLICATION_MODAL);
+			dialog.setBounds(500, 500, 400, 100);
+			dialog.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+			dialog = CreateDialog(projects);
+			dialog.setVisible(true);
+			
+
+			
+		}
+		else if(e.getSource() == logout)
+		{
+			if(bs.BatchID > -1)
+			{
+				bs.write();
+			}
+			setVisible(false);
+			dad.usnamereceive.setText("");
+			dad.pwordreceive.setText("");
+			dad.setVisible(true);
+		}
+		else if(e.getSource() == exit)
+		{
+			if(bs.BatchID > -1)
+			{
+				bs.write();
+			}
+			setVisible(false);
+			//dialog.dispose();
+			System.exit(0);
+		}
+		
+	}
+
+}

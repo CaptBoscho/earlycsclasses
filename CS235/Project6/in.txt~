@@ -1,0 +1,15 @@
+clear
+add missy
+add natalie
+add jordan
+add synthia
+add alyssa
+add sarah
+add elisha
+print
+remove sarah
+print
+remove jordan
+print
+remove elisha
+print

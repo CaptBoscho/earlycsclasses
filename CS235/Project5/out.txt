@@ -1,0 +1,93 @@
+clear
+insert  0  bob
+print
+Node 0: bob
+insert  1  joe
+print
+Node 0: bob
+Node 1: joe
+insert  0  jim
+print
+Node 0: jim
+Node 1: bob
+Node 2: joe
+insert  1  ned
+print
+Node 0: jim
+Node 1: ned
+Node 2: bob
+Node 3: joe
+insert  3  zed
+print
+Node 0: jim
+Node 1: ned
+Node 2: bob
+Node 3: zed
+Node 4: joe
+clear
+insert  0  bob
+insert  1  joe
+insert  0  jim
+insert  1  ned
+insert  3  zed
+print
+Node 0: jim
+Node 1: ned
+Node 2: bob
+Node 3: zed
+Node 4: joe
+remove 0 jim
+print
+Node 0: ned
+Node 1: bob
+Node 2: zed
+Node 3: joe
+remove 3 joe
+print
+Node 0: ned
+Node 1: bob
+Node 2: zed
+remove 1 bob
+print
+Node 0: ned
+Node 1: zed
+remove 1 zed
+print
+Node 0: ned
+remove 0 ned
+print
+clear
+insert  0  bob
+insert  1  joe
+insert  0  bob
+insert  1  ned
+insert  3  zed
+print
+Node 0: bob
+Node 1: ned
+Node 2: bob
+Node 3: zed
+Node 4: joe
+find zed 3
+find bob 0
+find joe 4
+find ned 1
+find sue -1
+remove 0 bob
+print
+Node 0: ned
+Node 1: bob
+Node 2: zed
+Node 3: joe
+find bob 1
+remove 1 bob
+print
+Node 0: ned
+Node 1: zed
+Node 2: joe
+find bob -1
+remove 1 zed
+remove 1 joe
+remove 0 ned
+print
+find zed -1

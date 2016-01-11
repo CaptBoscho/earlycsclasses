@@ -1,0 +1,724 @@
+package client;
+
+import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.image.RescaleOp;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.TreeSet;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import shared.communication.DownloadBatchOutput;
+import shared.model.field;
+import shared.model.project;
+
+
+class Cell {
+	int record;
+	int field;
+	
+	public Cell(int x, int y)
+	{
+		record = y;
+		field = x;
+	}
+	
+	public void setValues(int x, int y)
+	{
+		record = y;
+		field = x;
+	}
+}
+
+
+interface BatchStateListener {
+	
+	public void valueChanged(Cell cell, String newValue);
+	
+	public void selectedCellChanged(Cell newSelectedCell);
+}
+
+class BatchState {
+	
+	MainFrame main;
+	MainFrame main2;
+	Image image;
+	BottomPanel bp;
+	
+	String[][] values;
+	private Cell selectedCell;
+	private List<BatchStateListener> listeners;
+	private Cell imagecell;
+	
+	String username;
+	private DownloadBatchOutput dbo;
+	private String url;
+	int recordsperimage;
+	private int firstycoord;
+	private int recordheight;
+	List<field> fields;
+	private int proID;
+	Map<Integer, Set<String>> known;
+	
+	private int split1location;
+	private int split2location;
+	
+	Point point;
+	Dimension windowsize;
+	
+	private double scale = 1.0;
+	int BatchID;
+	boolean inverted;
+	
+	public BatchState(MainFrame mn, String s) {
+		main = mn;
+		username = s;
+		image = new Image(this);
+		image.repaint();
+		bp = new BottomPanel(this);
+		bp.repaint();
+		fields = new ArrayList<field>();
+		listeners = new ArrayList<BatchStateListener>();
+		selectedCell = new Cell(1,0);
+		inverted = false;
+		known = new HashMap<Integer, Set<String>>();
+		BatchID = -1;
+	}
+	
+	public void AfterSubmit()
+	{
+		image.After();
+		image.repaint();
+		bp.After();
+		bp.repaint();
+		fields = new ArrayList<field>();
+		listeners = new ArrayList<BatchStateListener>();
+		selectedCell = new Cell(1,0);
+		inverted = false;
+		known = new HashMap<Integer, Set<String>>();
+		BatchID = -1;
+		main.repaint();
+		
+	}
+	
+	public void initialize(int records, int fields)
+	{
+		//values = new String[records][fields+1];
+		selectedCell = new Cell(1,0);
+	}
+	
+	public void write()
+	{
+		point = main.getLocation();
+		windowsize = main.getSize();
+		split1location = main.split.getDividerLocation();
+		split2location = bp.split.getDividerLocation();
+		
+		int tablex = bp.tf.table.table.getSelectedColumn();
+		int tabley = bp.tf.table.table.getSelectedRow();
+//		System.out.println("x: " + tablex + " y: " + tabley);
+//		selectedCell = new Cell(tablex, tabley);
+		
+		
+		try {
+			DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+			
+			Document doc = docBuilder.newDocument();
+			
+			Element info = doc.createElement("info");
+			doc.appendChild(info);
+			
+			Element u = doc.createElement("url");
+			u.appendChild(doc.createTextNode(url));
+			info.appendChild(u);
+			
+			Element rpi = doc.createElement("recordsperimage");
+			rpi.appendChild(doc.createTextNode(Integer.toString(recordsperimage)));
+			info.appendChild(rpi);
+			
+			Element fyc = doc.createElement("firstycoord");
+			fyc.appendChild(doc.createTextNode(Integer.toString(firstycoord)));
+			info.appendChild(fyc);
+			
+			Element rh = doc.createElement("recordheight");
+			rh.appendChild(doc.createTextNode(Integer.toString(recordheight)));
+			info.appendChild(rh);
+			
+			Element proid = doc.createElement("proID");
+			proid.appendChild(doc.createTextNode(Integer.toString(proID)));
+			info.appendChild(proid);
+			
+			Element flds = doc.createElement("fields");
+			info.appendChild(flds);
+			
+			for(int i=0; i<fields.size(); i++)
+			{
+				Element field = doc.createElement("field");
+				flds.appendChild(field);
+				
+				Element title = doc.createElement("title");
+				title.appendChild(doc.createTextNode(fields.get(i).getTitle()));
+				field.appendChild(title);
+				
+				Element xcoord = doc.createElement("xcoord");
+				xcoord.appendChild(doc.createTextNode(Integer.toString(fields.get(i).getXcoord())));
+				field.appendChild(xcoord);
+				
+				Element width = doc.createElement("width");
+				width.appendChild(doc.createTextNode(Integer.toString(fields.get(i).getWidth())));
+				field.appendChild(width);
+				
+				
+				
+				Element helphtml = doc.createElement("helphtml");
+				helphtml.appendChild(doc.createTextNode(fields.get(i).getHelphtml()));
+				field.appendChild(helphtml);
+				
+				/*String temp2 = fields.get(i).getKnowndata();
+				StringBuilder sb2 = new StringBuilder(temp2);
+				sb2.delete(0, 7);*/
+				
+				Element knowndata = doc.createElement("knowndata");
+				knowndata.appendChild(doc.createTextNode(fields.get(i).getKnowndata()));
+				field.appendChild(knowndata);
+			}
+			
+			Element sc = doc.createElement("Selected_Cell");
+			info.appendChild(sc);
+			
+			Element tx = doc.createElement("table_x");
+			tx.appendChild(doc.createTextNode(Integer.toString(selectedCell.field)));
+			sc.appendChild(tx);
+			
+			Element ty = doc.createElement("table_y");
+			ty.appendChild(doc.createTextNode(Integer.toString(selectedCell.record)));
+			sc.appendChild(ty);
+			
+			Element ic = doc.createElement("Image_Cell");
+			info.appendChild(ic);
+			
+			Element ix = doc.createElement("image_x");
+			ix.appendChild(doc.createTextNode("0"));
+			ic.appendChild(ix);
+			
+			Element iy = doc.createElement("image_y");
+			iy.appendChild(doc.createTextNode("0"));
+			ic.appendChild(iy);
+			
+			Element s1 = doc.createElement("splitpane1");
+			s1.appendChild(doc.createTextNode(Integer.toString(split1location)));
+			info.appendChild(s1);
+			
+			Element s2 = doc.createElement("splitpane2");
+			s2.appendChild(doc.createTextNode(Integer.toString(split2location)));
+			info.appendChild(s2);
+			
+			Element pos = doc.createElement("position");
+			info.appendChild(pos);
+			
+			Element posx = doc.createElement("position_x");
+			posx.appendChild(doc.createTextNode(Integer.toString(point.x)));
+			pos.appendChild(posx);
+			
+			Element posy = doc.createElement("position_y");
+			posy.appendChild(doc.createTextNode(Integer.toString(point.y)));
+			pos.appendChild(posy);
+			
+			Element ws = doc.createElement("windowsize");
+			info.appendChild(ws);
+			
+			Element ws_x = doc.createElement("width");
+			ws_x.appendChild(doc.createTextNode(Double.toString(windowsize.getWidth())));
+			ws.appendChild(ws_x);
+			
+			Element ws_y = doc.createElement("height");
+			ws_y.appendChild(doc.createTextNode(Double.toString(windowsize.getHeight())));
+			ws.appendChild(ws_y);
+			
+			Element vs = doc.createElement("Values");
+			info.appendChild(vs);
+			
+			for(int i=0; i<recordsperimage; i++)
+			{
+				for (int k=0; k<fields.size(); k++)
+				{
+					String temp = values[i][k];
+					if(temp != null && !temp.isEmpty())
+					{
+						Element v = doc.createElement("value");
+						vs.appendChild(v);
+						
+						Element string = doc.createElement("string");
+						string.appendChild(doc.createTextNode(temp));
+						v.appendChild(string);
+						
+						Element r = doc.createElement("row");
+						r.appendChild(doc.createTextNode(Integer.toString(i)));
+						v.appendChild(r);
+						
+						Element c = doc.createElement("column");
+						c.appendChild(doc.createTextNode(Integer.toString(k)));
+						v.appendChild(c);
+					}
+				}
+			}
+			
+			Element bid = doc.createElement("batchID");
+			bid.appendChild(doc.createTextNode(Integer.toString(BatchID)));
+			info.appendChild(bid);
+			
+			Element scl = doc.createElement("scale");
+			scl.appendChild(doc.createTextNode(Double.toString(scale)));
+			info.appendChild(scl);
+			
+			String inv;
+			if(inverted)
+			{
+				inv = "t";
+			}
+			else
+			{
+				inv = "f";
+			}
+			
+			Element invert = doc.createElement("inverted");
+			invert.appendChild(doc.createTextNode(inv));
+			info.appendChild(invert);
+			
+			
+			TransformerFactory factory = TransformerFactory.newInstance();
+			Transformer transformer = factory.newTransformer();
+			DOMSource source = new DOMSource(doc);
+			StreamResult result = new StreamResult(new File(username +".xml"));
+			
+			transformer.transform(source, result);
+			
+			
+		} catch (ParserConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TransformerConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TransformerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void load()
+	{
+		try {
+
+			File fxmlFile = new File(username + ".xml");
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			Document doc = dBuilder.parse(fxmlFile);
+			
+			doc.getDocumentElement().normalize();
+			
+			NodeList info = doc.getElementsByTagName("info");
+			Element ielement = (Element) info.item(0);
+			url = getValue((Element)ielement.getElementsByTagName("url").item(0));
+			recordsperimage = Integer.parseInt(getValue(
+					(Element)ielement.getElementsByTagName("recordsperimage").item(0)));
+			firstycoord = Integer.parseInt(getValue(
+					(Element)ielement.getElementsByTagName("firstycoord").item(0)));
+			recordheight = Integer.parseInt(getValue(
+					(Element)ielement.getElementsByTagName("recordheight").item(0)));
+			proID = Integer.parseInt(getValue(
+					(Element)ielement.getElementsByTagName("proID").item(0)));
+			
+			NodeList flds = doc.getElementsByTagName("fields");
+			NodeList field = doc.getElementsByTagName("field");
+			for(int i=0; i<field.getLength(); i++)
+			{
+				field f = new field((Element)field.item(i), proID);
+				fields.add(f);
+			}
+			
+			Element sc = (Element)ielement.getElementsByTagName("Selected_Cell").item(0);
+			int tablex = Integer.parseInt(getValue(
+					(Element)ielement.getElementsByTagName("table_x").item(0)));
+			int tabley = Integer.parseInt(getValue(
+					(Element)ielement.getElementsByTagName("table_y").item(0)));
+			selectedCell = new Cell(tablex, tabley);
+			
+			Element ic = (Element)ielement.getElementsByTagName("Image_Cell").item(0);
+			int imagex = Integer.parseInt(getValue(
+					(Element)ielement.getElementsByTagName("image_x").item(0)));
+			int imagey = Integer.parseInt(getValue(
+					(Element)ielement.getElementsByTagName("image_y").item(0)));
+			imagecell = new Cell(imagex, imagey);
+			
+			split1location = Integer.parseInt(getValue(
+					(Element)ielement.getElementsByTagName("splitpane1").item(0)));
+			split2location = Integer.parseInt(getValue(
+					(Element)ielement.getElementsByTagName("splitpane2").item(0)));
+			
+			Element pos = (Element)ielement.getElementsByTagName("position").item(0);
+			int posx = Integer.parseInt(getValue(
+					(Element)pos.getElementsByTagName("position_x").item(0)));
+			int posy = Integer.parseInt(getValue(
+					(Element)pos.getElementsByTagName("position_y").item(0)));
+			point = new Point(posx, posy);
+			
+			Element ws = (Element)ielement.getElementsByTagName("windowsize").item(0);
+			double width = Double.parseDouble(getValue(
+					(Element)ws.getElementsByTagName("width").item(0)));
+			double height = Double.parseDouble(getValue(
+					(Element)ws.getElementsByTagName("height").item(0)));
+			int w = (int) width;
+			int h = (int) height;
+			windowsize = new Dimension(w, h);
+			
+			values = new String[recordsperimage][fields.size()+1];
+			NodeList vals = doc.getElementsByTagName("Values");
+			NodeList val = doc.getElementsByTagName("value");
+			for(int i=0; i<val.getLength(); i++)
+			{
+				Element v = (Element) val.item(i);
+				String s = getValue((Element)v.getElementsByTagName("string").item(0));
+				int r = Integer.parseInt(getValue(
+						(Element)v.getElementsByTagName("row").item(0)));
+				int c = Integer.parseInt(getValue(
+						(Element)v.getElementsByTagName("column").item(0)));
+				if(s!=null)
+				{
+					values[r][c] = s;
+				}
+			}
+			
+			String inv = getValue((Element)ielement.getElementsByTagName("inverted").item(0));
+			
+			if(inv.equals("t"))
+			{
+				inverted = true;
+			}
+			else
+			{
+				inverted = false;
+			}
+			
+			BatchID = Integer.parseInt(getValue(
+					(Element)doc.getElementsByTagName("batchID").item(0)));
+			
+			scale = Double.parseDouble(getValue(
+					(Element)doc.getElementsByTagName("scale").item(0)));
+			
+			loadUp();
+			
+			
+		} catch (ParserConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SAXException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public static String getValue(Element element)
+	{
+		String result = "";
+		if(element == null)
+		{
+			return null;
+		}
+		Node child = element.getFirstChild();
+	
+		result = child.getNodeValue();
+		return result;
+	}
+	
+	public void loadUp()
+	{
+		main.setSize(windowsize);
+		main.setLocation(point);
+		main.split.setDividerLocation(split1location);
+		
+		image.addPicture(url,recordheight, firstycoord, fields, selectedCell.field, selectedCell.record);
+		if(inverted)
+		{
+			RescaleOp op = new RescaleOp(-1.0f, 255f, null);
+			InvertImage(op);
+		}
+			
+		setTopComponent();
+		known = new HashMap<Integer, Set<String>>();
+		LoadMap();
+		
+		bp.split.setDividerLocation(split2location);
+		bp.tf.table.initialize(recordsperimage, fields);
+		bp.tf.form.initialize();
+		setBottomComponent();
+		main.revalidate();
+	}
+	
+	public void addListener(BatchStateListener l) {
+		listeners.add(l);
+	}
+	
+	public void updateCell(int r, int c)
+	{
+		image.updatePicture(url, recordheight, firstycoord, fields, c , r);
+		selectedCell.setValues(c, r);
+		bp.tf.form.fr.updateFR(r);
+		bp.tf.table.updateSelected(c, r);
+		
+		if(c>0)
+		{
+			String ufo = fields.get(c-1).getHelphtml();
+
+			StringBuilder sb = new StringBuilder(ufo);
+			
+			while(sb.charAt(0)=='R')
+			{
+				sb.delete(0, 8);
+			}
+			//System.out.println(sb.toString());
+			bp.fi.field.setPage(sb.toString());
+			bp.fi.field.repaint();
+		}
+	}
+	
+	public void InvertImage(RescaleOp op)
+	{
+		int c = selectedCell.field;
+		int r = selectedCell.record;
+		image.InvertPicture(url, recordheight, firstycoord, fields, c , r, op);
+	}
+	
+	public void UninvertImage()
+	{
+		int c = selectedCell.field;
+		int r = selectedCell.record;
+		image.updatePicture(url, recordheight, firstycoord, fields, c , r);
+	}
+	
+	public Cell getCell()
+	{
+		return selectedCell;
+	}
+	
+	public void setTopComponent()
+	{
+		main.split.setTopComponent(image);
+	}
+	
+	public void setBottomComponent()
+	{
+		main.split.setBottomComponent(bp);
+	}
+	
+	public void setValue(Cell cell, String value) {
+		
+		values[cell.record][cell.field] = value;
+		
+		for (BatchStateListener l : listeners) {
+			l.valueChanged(cell, value);
+		}
+	}
+	
+	public void setURL(String u)
+	{
+		url = u;
+	}
+	
+	public void setDBO(DownloadBatchOutput d)
+	{
+		dbo = d;
+		project pro = dbo.getProject();
+		recordsperimage = pro.getRecordsperimage();
+		firstycoord = pro.getFirstycoord();
+		recordheight = pro.getRecordheight();
+		fields = pro.getFields();
+		proID = pro.getPersonalID();
+		values = new String[recordsperimage][fields.size() + 1];
+		BatchID = dbo.getBatchID();
+		LoadMap();
+	}
+	
+	public void LoadMap()
+	{
+		for(int i=0; i<fields.size(); i++)
+		{
+			String knownurl = fields.get(i).getKnowndata();
+			StringBuilder fix = new StringBuilder(knownurl);
+			while(fix.charAt(0) == 'R')
+			{
+				fix.delete(0, 8);
+			}
+			/*while(fix.charAt(0) != 'R')
+			{
+				fix.deleteCharAt(0);
+			}*/
+			System.out.println(fix.toString());
+			
+			if(fix.charAt(fix.length()-1) != 'l')
+			{
+				
+				BufferedReader br;
+				try {
+					br = new BufferedReader(new FileReader(fix.toString()));
+					StringBuilder sb = new StringBuilder();
+				    String line = br.readLine();
+	
+			        while (line != null) {
+			            sb.append(line);
+			            sb.append(System.lineSeparator());
+			            line = br.readLine();
+			        }
+			        String everything = sb.toString();
+			        
+				    Scanner scan = new Scanner(everything);
+				    scan.useDelimiter(",");
+				    Set<String> templist = new TreeSet<String>();
+				    
+				    while(scan.hasNext())
+				    {
+				    	String s = scan.next();
+				    	String next = s.trim();
+				    	templist.add(next);
+				    }
+				   // System.out.println(templist.size());
+				    
+				    known.put(i+1, templist);
+				    
+			        br.close();
+				        
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		     
+		}
+	}
+	
+	public Set<String> getFieldSet(int c)
+	{
+		return known.get(c);
+	}
+	
+	public DownloadBatchOutput getDBO()
+	{
+		return dbo;
+	}
+	
+	public void setSplit2(int i)
+	{
+		split2location = i;
+	}
+	
+	public int getSplit2()
+	{
+		return split2location;
+	}
+	
+	public void setUsername(String s)
+	{
+		username = s;
+	}
+	
+	public String getUsername()
+	{
+		return username;
+	}
+	
+	public String getValue(Cell cell) {
+		return values[cell.record][cell.field];
+	}
+	
+	public void setSelectedCell(Cell selCell) {
+		
+		selectedCell = selCell;
+		
+		for (BatchStateListener l : listeners) {
+			l.selectedCellChanged(selCell);
+		}
+	}
+	
+	public Cell getSelectedCell() {
+		return selectedCell;
+	}
+	
+	public void setScale(double sc)
+	{
+		scale = sc;
+	}
+	
+	public double getScale()
+	{
+		return scale;
+	}
+
+	public void determineCell(int w_X, int w_Y) {
+		if(w_Y < firstycoord || w_X < fields.get(0).getXcoord())
+		{
+			return;
+		}
+		
+		int x = -1;
+		int y = -1;
+		
+		for(int i=0; i<fields.size(); i++)
+		{
+			if(w_X > fields.get(i).getXcoord() && w_X < (fields.get(i).getWidth()+fields.get(i).getXcoord()))
+			{
+				x = i;
+			}
+		}
+		
+		for(int i=0; i<recordsperimage; i++)
+		{
+			int one = firstycoord + (recordheight * i);
+			int two = firstycoord + (recordheight * (i+1));
+			
+			if(w_Y > one && w_Y < two)
+			{
+				y = i;
+			}
+		}
+		
+		if(y == -1 || x == -1)
+		{
+			return;
+		}
+		
+		updateCell(y, x+1);
+		
+	}
+}

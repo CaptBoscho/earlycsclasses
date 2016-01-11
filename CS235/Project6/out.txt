@@ -1,0 +1,21 @@
+clear
+add  40
+add  20
+add  60
+add  10
+add  30
+add  50
+add  70
+add  55
+add  35
+print
+level 0: 40(4) 
+level 1: 20(3) 60(3) 
+level 2: 10(1) 30(2) 50(2) 70(1) 
+level 3: 35(1) 55(1) 
+remove  60
+print
+level 0: 40(4) 
+level 1: 20(3) 55(2) 
+level 2: 10(1) 30(2) 50(1) 70(1) 
+level 3: 35(1) 

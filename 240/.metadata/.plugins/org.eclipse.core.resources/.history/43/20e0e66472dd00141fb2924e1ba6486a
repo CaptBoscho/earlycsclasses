@@ -1,0 +1,12 @@
+package client;
+
+import javax.swing.JFrame;
+
+public class LoginParentFrame extends JFrame{
+
+	public LoginParentFrame(String hostname, int port)
+	{
+		new LoginFrame(this);
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
+	}
+}
